@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Minha Carteira — Meu Cashback</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; }
+        .container { background: white; width: 100%; max-width: 450px; padding: 25px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center; }
+        
+        /* Box da Oferta (oculto por padrão) */
+        .notificacao-oferta { display: none; background-color: #fff3cd; border: 1px solid #ffeeba; border-left: 5px solid #ff9900; padding: 15px; border-radius: 8px; text-align: left; margin-bottom: 20px; animation: pulse 2s infinite; }
+        .notificacao-oferta h4 { color: #856404; font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+        .notificacao-oferta p { color: #664d03; font-size: 13px; line-height: 1.4; }
+        .notificacao-oferta .val-tag { display: inline-block; margin-top: 6px; font-size: 11px; background: #ff9900; color: white; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+
+        .search-box { display: flex; gap: 8px; margin-bottom: 20px; }
+        .search-box input { flex: 1; height: 45px; padding: 0 12px; border: 1px solid #e9edef; border-radius: 8px; outline: none; font-size: 16px; }
+        .search-box button { width: 100px; background-color: #111b21; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        
+        .card-saldo { background: linear-gradient(135deg, #00a884, #008f72); color: white; padding: 25px; border-radius: 12px; margin-bottom: 20px; text-align: left; box-shadow: 0 4px 10px rgba(0,168,132,0.3); }
+        .card-saldo span { font-size: 13px; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }
+        .card-saldo h2 { font-size: 32px; margin-top: 5px; font-weight: 700; }
+        .card-saldo p { color: white; font-size: 14px; margin-top: 10px; opacity: 0.85; }
+
+        .extrato-title { text-align: left; font-size: 15px; color: #111b21; margin-bottom: 10px; font-weight: 600; }
+        .extrato-list { max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; }
+        .extrato-item { background: #f8f9fa; padding: 10px 14px; border-radius: 8px; border-left: 4px solid #00a884; display: flex; justify-content: space-between; align-items: center; }
+        .extrato-item div h5 { font-size: 14px; color: #111b21; }
+        .extrato-item div span { font-size: 11px; color: #667781; }
+        .extrato-val { color: #00a884; font-weight: 600; font-size: 14px; }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 153, 0, 0.4); }
+            70% { box-shadow: 0 0 0 8px rgba(255, 153, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 153, 0, 0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h3 style="color: #111b21; margin-bottom: 15px;">Minha Carteira Cashback 💳</h3>
+
+        <div class="notificacao-oferta" id="boxOferta">
+            <h4 id="ofTitulo">🎁 Oferta Especial Disponível!</h4>
+            <p id="ofDesc">Carregando detalhes...</p>
+            <span class="val-tag" id="ofValidade">Válido até: --/--/----</span>
+        </div>
+
+        <div class="search-box">
+            <input type="number" id="searchCpf" placeholder="Digite seu CPF (11 dígitos)">
+            <button onclick="consultarSaldo()">Buscar</button>
+        </div>
+
+        <div class="card-saldo">
+            <span>Saldo Disponível</span>
+            <h2 id="txtSaldo">R$ 0,00</h2>
+            <p id="txtCliente">Informe seu CPF acima</p>
+        </div>
+
+        <div class="extrato-title">Histórico de Ganhos</div>
+        <div class="extrato-list" id="extratoList">
+            <p style="color: #667781; font-size: 13px; text-align: center; width: 100%; margin-top: 10px;">Nenhuma consulta realizada.</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // CREDENCIAIS DA SUA CONTA ATUALIZADAS
+        const firebaseConfig = {
+            apiKey: "AIzaSyBFmMSu6usbjQua4KAP-V0FFTeq5WxYH5c",
+            authDomain: "startup-b5c8e.firebaseapp.com",
+            projectId: "startup-b5c8e",
+            storageBucket: "startup-b5c8e.firebasestorage.app",
+            messagingSenderId: "36503928162",
+            appId: "1:36503928162:web:22eafe938d86c6b2e99403b"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        let activeUserUnsubscribe = null;
+
+        window.consultarSaldo = function() {
+            const cpf = document.getElementById('searchCpf').value.trim();
+            if (!cpf || cpf.length !== 11) return alert("Digite um CPF com 11 dígitos!");
+
+            document.getElementById('boxOferta').style.display = 'none';
+
+            if (activeUserUnsubscribe) activeUserUnsubscribe();
+
+            activeUserUnsubscribe = onSnapshot(doc(db, "usuarios", cpf), (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    document.getElementById('txtSaldo').innerText = `R$ ${data.saldo_cashback.toFixed(2).replace('.', ',')}`;
+                    document.getElementById('txtCliente').innerText = `Cliente: ${data.nome || 'Cadastrado'}`;
+                    
+                    checarOfertasAtivas(cpf);
+                    carregarExtrato(cpf);
+                } else {
+                    document.getElementById('txtSaldo').innerText = "R$ 0,00";
+                    document.getElementById('txtCliente').innerText = "Cliente não encontrado";
+                    document.getElementById('extratoList').innerHTML = `<p style="color: #667781; font-size: 13px; text-align: center; width: 100%;">CPF sem registro.</p>`;
+                }
+            });
+        }
+
+        async function checarOfertasAtivas(cpf) {
+            const boxOferta = document.getElementById('boxOferta');
+            const ofTitulo = document.getElementById('ofTitulo');
+            const ofDesc = document.getElementById('ofDesc');
+            const ofValidade = document.getElementById('ofValidade');
+
+            const q = query(collection(db, "ofertas"), where("cpf_cliente", "==", cpf));
+
+            try {
+                const querySnapshot = await getDocs(q);
+                const hojeIso = new Date().toISOString().split('T')[0];
+                let ofertaValidaEncontrada = false;
+
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    
+                    if (data.validade >= hojeIso && !ofertaValidaEncontrada) {
+                        ofertaValidaEncontrada = true;
+                        const [ano, mes, dia] = data.validade.split('-');
+                        const dataBr = `${dia}/${mes}/${ano}`;
+
+                        ofTitulo.innerText = `🎯 Oferta Especial: ${data.titulo}`;
+                        ofDesc.innerText = data.descricao || "Aproveite esta condição especial no caixa.";
+                        ofValidade.innerText = `Válido até: ${dataBr}`;
+                        
+                        boxOferta.style.display = 'block';
+                    }
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        async function carregarExtrato(cpf) {
+            const listContainer = document.getElementById('extratoList');
+            const q = query(collection(db, "historico_compras"), where("cpf_cliente", "==", cpf));
+            try {
+                const querySnapshot = await getDocs(q);
+                listContainer.innerHTML = '';
+                if (querySnapshot.empty) {
+                    listContainer.innerHTML = `<p style="color: #667781; font-size: 13px; text-align: center; width: 100%;">Nenhum histórico.</p>`;
+                    return;
+                }
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'extrato-item';
+                    itemDiv.innerHTML = `
+                        <div>
+                            <h5>Compra de R$ ${data.valor_compra.toFixed(2).replace('.', ',')}</h5>
+                            <span>Crédito ganho (${data.porcentagem_aplicada}%)</span>
+                        </div>
+                        <span class="extrato-val">+ R$ ${data.valor_cashback.toFixed(2).replace('.', ',')}</span>
+                    `;
+                    listContainer.appendChild(itemDiv);
+                });
+            } catch (error) { console.error(error); }
+        }
+    </script>
+</body>
+</html>
