@@ -9,10 +9,17 @@
         body { background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; }
         .container { background: white; width: 100%; max-width: 450px; padding: 25px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center; }
         
-        .notificacao-oferta { display: none; background-color: #fff3cd; border: 1px solid #ffeeba; border-left: 5px solid #ff9900; padding: 15px; border-radius: 8px; text-align: left; margin-bottom: 20px; animation: pulse 2s infinite; }
+        /* Modificado: O estilo agora é aplicado diretamente nos cards dinâmicos */
+        .notificacao-oferta { background-color: #fff3cd; border: 1px solid #ffeeba; border-left: 5px solid #ff9900; padding: 15px; border-radius: 8px; text-align: left; animation: pulse 2s infinite; }
         .notificacao-oferta h4 { color: #856404; font-size: 15px; font-weight: 700; margin-bottom: 4px; }
         .notificacao-oferta p { color: #664d03; font-size: 13px; line-height: 1.4; }
         .notificacao-oferta .val-tag { display: inline-block; margin-top: 6px; font-size: 11px; background: #ff9900; color: white; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+        
+        /* Variante visual discreta para diferenciar oferta geral de individual */
+        .notificacao-oferta.oferta-geral { border-left-color: #0052cc; background-color: #e6f0ff; border-color: #b3d1ff; }
+        .notificacao-oferta.oferta-geral h4 { color: #003380; }
+        .notificacao-oferta.oferta-geral p { color: #002255; }
+        .notificacao-oferta.oferta-geral .val-tag { background: #0052cc; }
 
         .search-box { display: flex; gap: 8px; margin-bottom: 20px; }
         .search-box input { flex: 1; height: 45px; padding: 0 12px; border: 1px solid #e9edef; border-radius: 8px; outline: none; font-size: 16px; }
@@ -25,16 +32,18 @@
 
         .extrato-title { text-align: left; font-size: 15px; color: #111b21; margin-bottom: 10px; font-weight: 600; }
         .extrato-list { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; }
+        
         .extrato-item { background: #f8f9fa; padding: 10px 14px; border-radius: 8px; border-left: 4px solid #00a884; display: flex; justify-content: space-between; align-items: center; }
         .extrato-item.tipo-resgate { border-left-color: #e91e63; }
         .extrato-item div h5 { font-size: 14px; color: #111b21; }
         .extrato-item div span { font-size: 11px; color: #667781; }
+        
         .extrato-val { color: #00a884; font-weight: 600; font-size: 14px; }
         .extrato-val.val-negativo { color: #e91e63; }
 
         @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(255, 153, 0, 0.4); }
-            70% { box-shadow: 0 0 0 8px rgba(255, 153, 0, 0); }
+            0% { box-shadow: 0 0 0 0 rgba(255, 153, 0, 0.3); }
+            70% { box-shadow: 0 0 0 6px rgba(255, 153, 0, 0); }
             100% { box-shadow: 0 0 0 0 rgba(255, 153, 0, 0); }
         }
     </style>
@@ -44,11 +53,7 @@
     <div class="container">
         <h3 style="color: #111b21; margin-bottom: 15px;">Minha Carteira Cashback 💳</h3>
 
-        <div class="notificacao-oferta" id="boxOferta">
-            <h4 id="ofTitulo">🎁 Oferta Especial Disponível!</h4>
-            <p id="ofDesc">Carregando detalhes...</p>
-            <span class="val-tag" id="ofValidade">Válido até: --/--/----</span>
-        </div>
+        <div id="ofertasContainer" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;"></div>
 
         <div class="search-box">
             <input type="number" id="searchCpf" placeholder="Digite seu CPF (11 dígitos)">
@@ -88,7 +93,8 @@
             const cpf = document.getElementById('searchCpf').value.trim();
             if (!cpf || cpf.length !== 11) return alert("Digite um CPF com 11 dígitos!");
 
-            document.getElementById('boxOferta').style.display = 'none';
+            // Limpa o painel de ofertas anterior antes de buscar
+            document.getElementById('ofertasContainer').innerHTML = '';
 
             if (activeUserUnsubscribe) activeUserUnsubscribe();
 
@@ -108,45 +114,42 @@
             });
         }
 
-        // ALTERAÇÃO: Busca ofertas direcionadas ao CPF específico E as ofertas marcadas para "todos"
+        // CORREÇÃO CRÍTICA: Agora renderiza múltiplos cards dinamicamente na tela
         async function checarOfertasAtivas(cpf) {
-            const boxOferta = document.getElementById('boxOferta');
-            const ofTitulo = document.getElementById('ofTitulo');
-            const ofDesc = document.getElementById('ofDesc');
-            const ofValidade = document.getElementById('ofValidade');
+            const container = document.getElementById('ofertasContainer');
+            container.innerHTML = ''; // Limpa para não duplicar na atualização em tempo real
 
-            // Usa o filtro "in" para trazer ambos os tipos de cupons de uma só vez
             const q = query(collection(db, "ofertas"), where("cpf_cliente", "in", [cpf, "todos"]));
 
             try {
                 const querySnapshot = await getDocs(q);
                 const hojeIso = new Date().toISOString().split('T')[0];
-                
-                let melhorOferta = null;
 
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     
-                    // Valida se a oferta ainda está no prazo de validade
+                    // Valida o prazo de vencimento de cada oferta encontrada
                     if (data.validade >= hojeIso) {
-                        // Se for uma oferta individual por CPF, ela ganha prioridade máxima na tela
-                        if (!melhorOferta || data.cpf_cliente !== "todos") {
-                            melhorOferta = data;
-                        }
+                        const [ano, mes, dia] = data.validade.split('-');
+                        const dataBr = `${dia}/${mes}/${ano}`;
+                        const isGeral = data.cpf_cliente === "todos";
+
+                        // Cria a caixinha injetando as classes correspondentes
+                        const cardElement = document.createElement('div');
+                        cardElement.className = isGeral ? 'notificacao-oferta oferta-geral' : 'notificacao-oferta';
+                        
+                        const tituloTag = isGeral ? `📢 Campanhas da Loja: ${data.titulo}` : `🎯 Exclusivo pra Você: ${data.titulo}`;
+
+                        cardElement.innerHTML = `
+                            <h4>${tituloTag}</h4>
+                            <p>${data.descricao || "Aproveite esta condição especial no caixa."}</p>
+                            <span class="val-tag">Válido até: ${dataBr}</span>
+                        `;
+                        
+                        // Adiciona no contêiner empilhando uma embaixo da outra
+                        container.appendChild(cardElement);
                     }
                 });
-
-                // Se houver qualquer oferta válida, renderiza o box ameno de avisos
-                if (melhorOferta) {
-                    const [ano, mes, dia] = melhorOferta.validade.split('-');
-                    const dataBr = `${dia}/${mes}/${ano}`;
-
-                    ofTitulo.innerText = melhorOferta.cpf_cliente === "todos" ? `📢 Oferta da Loja: ${melhorOferta.titulo}` : `🎯 Oferta Especial: ${melhorOferta.titulo}`;
-                    ofDesc.innerText = melhorOferta.descricao || "Aproveite esta condição especial no caixa.";
-                    ofValidade.innerText = `Válido até: ${dataBr}`;
-                    
-                    boxOferta.style.display = 'block';
-                }
             } catch (e) { console.error(e); }
         }
 
