@@ -9,7 +9,6 @@
         body { background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; }
         .container { background: white; width: 100%; max-width: 450px; padding: 25px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center; }
         
-        /* Box da Oferta (oculto por padrão) */
         .notificacao-oferta { display: none; background-color: #fff3cd; border: 1px solid #ffeeba; border-left: 5px solid #ff9900; padding: 15px; border-radius: 8px; text-align: left; margin-bottom: 20px; animation: pulse 2s infinite; }
         .notificacao-oferta h4 { color: #856404; font-size: 15px; font-weight: 700; margin-bottom: 4px; }
         .notificacao-oferta p { color: #664d03; font-size: 13px; line-height: 1.4; }
@@ -26,14 +25,10 @@
 
         .extrato-title { text-align: left; font-size: 15px; color: #111b21; margin-bottom: 10px; font-weight: 600; }
         .extrato-list { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; }
-        
-        /* Items do Extrato */
         .extrato-item { background: #f8f9fa; padding: 10px 14px; border-radius: 8px; border-left: 4px solid #00a884; display: flex; justify-content: space-between; align-items: center; }
         .extrato-item.tipo-resgate { border-left-color: #e91e63; }
         .extrato-item div h5 { font-size: 14px; color: #111b21; }
         .extrato-item div span { font-size: 11px; color: #667781; }
-        
-        /* Cores dos Valores */
         .extrato-val { color: #00a884; font-weight: 600; font-size: 14px; }
         .extrato-val.val-negativo { color: #e91e63; }
 
@@ -76,7 +71,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // CREDENCIAIS DA SUA CONTA
         const firebaseConfig = {
             apiKey: "AIzaSyBFmMSu6usbjQua4KAP-V0FFTeq5WxYH5c",
             authDomain: "startup-b5c8e.firebaseapp.com",
@@ -114,33 +108,45 @@
             });
         }
 
+        // ALTERAÇÃO: Busca ofertas direcionadas ao CPF específico E as ofertas marcadas para "todos"
         async function checarOfertasAtivas(cpf) {
             const boxOferta = document.getElementById('boxOferta');
             const ofTitulo = document.getElementById('ofTitulo');
             const ofDesc = document.getElementById('ofDesc');
             const ofValidade = document.getElementById('ofValidade');
 
-            const q = query(collection(db, "ofertas"), where("cpf_cliente", "==", cpf));
+            // Usa o filtro "in" para trazer ambos os tipos de cupons de uma só vez
+            const q = query(collection(db, "ofertas"), where("cpf_cliente", "in", [cpf, "todos"]));
 
             try {
                 const querySnapshot = await getDocs(q);
                 const hojeIso = new Date().toISOString().split('T')[0];
-                let ofertaValidaEncontrada = false;
+                
+                let melhorOferta = null;
 
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
-                    if (data.validade >= hojeIso && !ofertaValidaEncontrada) {
-                        ofertaValidaEncontrada = true;
-                        const [ano, mes, dia] = data.validade.split('-');
-                        const dataBr = `${dia}/${mes}/${ano}`;
-
-                        ofTitulo.innerText = `🎯 Oferta Especial: ${data.titulo}`;
-                        ofDesc.innerText = data.descricao || "Aproveite esta condição especial no caixa.";
-                        ofValidade.innerText = `Válido até: ${dataBr}`;
-                        
-                        boxOferta.style.display = 'block';
+                    
+                    // Valida se a oferta ainda está no prazo de validade
+                    if (data.validade >= hojeIso) {
+                        // Se for uma oferta individual por CPF, ela ganha prioridade máxima na tela
+                        if (!melhorOferta || data.cpf_cliente !== "todos") {
+                            melhorOferta = data;
+                        }
                     }
                 });
+
+                // Se houver qualquer oferta válida, renderiza o box ameno de avisos
+                if (melhorOferta) {
+                    const [ano, mes, dia] = melhorOferta.validade.split('-');
+                    const dataBr = `${dia}/${mes}/${ano}`;
+
+                    ofTitulo.innerText = melhorOferta.cpf_cliente === "todos" ? `📢 Oferta da Loja: ${melhorOferta.titulo}` : `🎯 Oferta Especial: ${melhorOferta.titulo}`;
+                    ofDesc.innerText = melhorOferta.descricao || "Aproveite esta condição especial no caixa.";
+                    ofValidade.innerText = `Válido até: ${dataBr}`;
+                    
+                    boxOferta.style.display = 'block';
+                }
             } catch (e) { console.error(e); }
         }
 
@@ -158,7 +164,6 @@
                     const data = doc.data();
                     const itemDiv = document.createElement('div');
                     
-                    // Tratamento rigoroso de descontos (seja pela tag OU pelo valor negativo)
                     if (data.tipo === "resgate" || data.valor_cashback < 0) {
                         itemDiv.className = 'extrato-item tipo-resgate';
                         itemDiv.innerHTML = `
@@ -169,7 +174,6 @@
                             <span class="extrato-val val-negativo">- R$ ${Math.abs(data.valor_cashback).toFixed(2).replace('.', ',')}</span>
                         `;
                     } else {
-                        // Entrada padrão de créditos ganhos
                         itemDiv.className = 'extrato-item';
                         itemDiv.innerHTML = `
                             <div>
