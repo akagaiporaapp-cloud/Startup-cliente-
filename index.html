@@ -3,61 +3,330 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Minha Carteira — Meu Cashback</title>
+    <title>Meu Cashback — Carteira Digital</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; }
-        .container { background: white; width: 100%; max-width: 450px; padding: 25px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center; }
-        
-        /* Modificado: O estilo agora é aplicado diretamente nos cards dinâmicos */
-        .notificacao-oferta { background-color: #fff3cd; border: 1px solid #ffeeba; border-left: 5px solid #ff9900; padding: 15px; border-radius: 8px; text-align: left; animation: pulse 2s infinite; }
-        .notificacao-oferta h4 { color: #856404; font-size: 15px; font-weight: 700; margin-bottom: 4px; }
-        .notificacao-oferta p { color: #664d03; font-size: 13px; line-height: 1.4; }
-        .notificacao-oferta .val-tag { display: inline-block; margin-top: 6px; font-size: 11px; background: #ff9900; color: white; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
-        
-        /* Variante visual discreta para diferenciar oferta geral de individual */
-        .notificacao-oferta.oferta-geral { border-left-color: #0052cc; background-color: #e6f0ff; border-color: #b3d1ff; }
-        .notificacao-oferta.oferta-geral h4 { color: #003380; }
-        .notificacao-oferta.oferta-geral p { color: #002255; }
-        .notificacao-oferta.oferta-geral .val-tag { background: #0052cc; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-        .search-box { display: flex; gap: 8px; margin-bottom: 20px; }
-        .search-box input { flex: 1; height: 45px; padding: 0 12px; border: 1px solid #e9edef; border-radius: 8px; outline: none; font-size: 16px; }
-        .search-box button { width: 100px; background-color: #111b21; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
-        
-        .card-saldo { background: linear-gradient(135deg, #00a884, #008f72); color: white; padding: 25px; border-radius: 12px; margin-bottom: 20px; text-align: left; box-shadow: 0 4px 10px rgba(0,168,132,0.3); }
-        .card-saldo span { font-size: 13px; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }
-        .card-saldo h2 { font-size: 32px; margin-top: 5px; font-weight: 700; }
-        .card-saldo p { color: white; font-size: 14px; margin-top: 10px; opacity: 0.85; }
+        :root {
+            --primary: #0052cc;
+            --secondary: #ff9900;
+            --success: #00a884;
+            --success-dark: #008f72;
+            --accent: #e91e63;
+            --gray-50: #f8f9fa;
+            --gray-100: #f1f3f5;
+            --gray-200: #e9ecef;
+            --gray-600: #6c757d;
+            --gray-700: #495057;
+            --gray-800: #343a40;
+            --gray-900: #212529;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.05);
+            --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.08);
+        }
 
-        .extrato-title { text-align: left; font-size: 15px; color: #111b21; margin-bottom: 10px; font-weight: 600; }
-        .extrato-list { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; }
-        
-        .extrato-item { background: #f8f9fa; padding: 10px 14px; border-radius: 8px; border-left: 4px solid #00a884; display: flex; justify-content: space-between; align-items: center; }
-        .extrato-item.tipo-resgate { border-left-color: #e91e63; }
-        .extrato-item div h5 { font-size: 14px; color: #111b21; }
-        .extrato-item div span { font-size: 11px; color: #667781; }
-        
-        .extrato-val { color: #00a884; font-weight: 600; font-size: 14px; }
-        .extrato-val.val-negativo { color: #e91e63; }
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        }
+
+        .container {
+            background: white;
+            width: 100%;
+            max-width: 480px;
+            padding: 32px 28px;
+            border-radius: 36px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        h3 {
+            font-size: 1.7rem;
+            font-weight: 600;
+            color: var(--gray-800);
+            margin-bottom: 24px;
+            letter-spacing: -0.5px;
+            text-align: center;
+        }
+
+        /* Cards de oferta */
+        .notificacao-oferta {
+            background: linear-gradient(135deg, #fff8e7 0%, #fff3d6 100%);
+            border: none;
+            border-left: 4px solid var(--secondary);
+            padding: 16px;
+            border-radius: 20px;
+            margin-bottom: 12px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .notificacao-oferta:hover {
+            transform: translateX(4px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .notificacao-oferta h4 {
+            color: #b45f06;
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .notificacao-oferta p {
+            color: #7a4a01;
+            font-size: 0.8rem;
+            line-height: 1.4;
+            margin-bottom: 8px;
+        }
+
+        .notificacao-oferta .val-tag {
+            display: inline-block;
+            font-size: 0.7rem;
+            background: var(--secondary);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .notificacao-oferta.oferta-geral {
+            background: linear-gradient(135deg, #e8f0fe 0%, #dce8f5 100%);
+            border-left-color: var(--primary);
+        }
+
+        .notificacao-oferta.oferta-geral h4 {
+            color: #003d66;
+        }
+
+        .notificacao-oferta.oferta-geral p {
+            color: #002a4a;
+        }
+
+        .notificacao-oferta.oferta-geral .val-tag {
+            background: var(--primary);
+        }
+
+        /* Busca */
+        .search-box {
+            display: flex;
+            gap: 12px;
+            margin: 24px 0 20px;
+        }
+
+        .search-box input {
+            flex: 1;
+            height: 52px;
+            padding: 0 18px;
+            border: 1.5px solid var(--gray-200);
+            border-radius: 20px;
+            outline: none;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0,82,204,0.1);
+        }
+
+        .search-box button {
+            width: 100px;
+            background: var(--gray-800);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .search-box button:hover:not(:disabled) {
+            background: var(--gray-900);
+            transform: scale(0.96);
+        }
+
+        .search-box button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        /* Spinner */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Card Saldo */
+        .card-saldo {
+            background: linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%);
+            color: white;
+            padding: 28px;
+            border-radius: 28px;
+            margin-bottom: 28px;
+            transition: transform 0.2s ease;
+        }
+
+        .card-saldo:hover {
+            transform: translateY(-2px);
+        }
+
+        .card-saldo span {
+            font-size: 0.75rem;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 500;
+        }
+
+        .card-saldo h2 {
+            font-size: 2.8rem;
+            margin-top: 8px;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+
+        .card-saldo p {
+            font-size: 0.85rem;
+            margin-top: 12px;
+            opacity: 0.9;
+        }
+
+        /* Extrato */
+        .extrato-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .extrato-list {
+            max-height: 260px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .extrato-item {
+            background: var(--gray-50);
+            padding: 12px 16px;
+            border-radius: 16px;
+            border-left: 3px solid var(--success);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .extrato-item:hover {
+            background: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .extrato-item.tipo-resgate {
+            border-left-color: var(--accent);
+        }
+
+        .extrato-item div h5 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--gray-800);
+            margin-bottom: 3px;
+        }
+
+        .extrato-item div span {
+            font-size: 0.7rem;
+            color: var(--gray-600);
+        }
+
+        .extrato-val {
+            color: var(--success);
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .extrato-val.val-negativo {
+            color: var(--accent);
+        }
+
+        /* Loading placeholder para extrato */
+        .loading-placeholder {
+            text-align: center;
+            padding: 20px;
+            color: var(--gray-600);
+            font-size: 0.8rem;
+        }
+
+        /* Scroll personalizado */
+        .extrato-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .extrato-list::-webkit-scrollbar-track {
+            background: var(--gray-200);
+            border-radius: 10px;
+        }
+
+        .extrato-list::-webkit-scrollbar-thumb {
+            background: var(--gray-600);
+            border-radius: 10px;
+        }
 
         @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(255, 153, 0, 0.3); }
-            70% { box-shadow: 0 0 0 6px rgba(255, 153, 0, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 153, 0, 0); }
+            0% { box-shadow: 0 0 0 0 rgba(0,168,132,0.3); }
+            70% { box-shadow: 0 0 0 8px rgba(0,168,132,0); }
+            100% { box-shadow: 0 0 0 0 rgba(0,168,132,0); }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 24px 20px;
+                border-radius: 28px;
+            }
+            .card-saldo h2 {
+                font-size: 2.2rem;
+            }
+            .search-box button {
+                width: 85px;
+            }
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h3 style="color: #111b21; margin-bottom: 15px;">Minha Carteira Cashback 💳</h3>
+        <h3>💳 Minha Carteira</h3>
 
         <div id="ofertasContainer" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;"></div>
 
         <div class="search-box">
-            <input type="number" id="searchCpf" placeholder="Digite seu CPF (11 dígitos)">
-            <button onclick="consultarSaldo()">Buscar</button>
+            <input type="number" id="searchCpf" placeholder="Seu CPF (11 dígitos)">
+            <button id="btnBuscar">Buscar</button>
         </div>
 
         <div class="card-saldo">
@@ -66,9 +335,9 @@
             <p id="txtCliente">Informe seu CPF acima</p>
         </div>
 
-        <div class="extrato-title">Histórico de Movimentações</div>
+        <div class="extrato-title">📋 Histórico</div>
         <div class="extrato-list" id="extratoList">
-            <p style="color: #667781; font-size: 13px; text-align: center; width: 100%; margin-top: 10px;">Nenhuma consulta realizada.</p>
+            <p class="loading-placeholder">Nenhuma movimentação</p>
         </div>
     </div>
 
@@ -89,80 +358,80 @@
         const db = getFirestore(app);
         let activeUserUnsubscribe = null;
 
-        window.consultarSaldo = function() {
-            const cpf = document.getElementById('searchCpf').value.trim();
-            if (!cpf || cpf.length !== 11) return alert("Digite um CPF com 11 dígitos!");
-
-            // Limpa o painel de ofertas anterior antes de buscar
-            document.getElementById('ofertasContainer').innerHTML = '';
-
-            if (activeUserUnsubscribe) activeUserUnsubscribe();
-
-            activeUserUnsubscribe = onSnapshot(doc(db, "usuarios", cpf), (docSnap) => {
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    document.getElementById('txtSaldo').innerText = `R$ ${data.saldo_cashback.toFixed(2).replace('.', ',')}`;
-                    document.getElementById('txtCliente').innerText = `Cliente: ${data.nome || 'Cadastrado'}`;
-                    
-                    checarOfertasAtivas(cpf);
-                    carregarExtrato(cpf);
-                } else {
-                    document.getElementById('txtSaldo').innerText = "R$ 0,00";
-                    document.getElementById('txtCliente').innerText = "Cliente não encontrado";
-                    document.getElementById('extratoList').innerHTML = `<p style="color: #667781; font-size: 13px; text-align: center; width: 100%;">CPF sem registro.</p>`;
-                }
-            });
+        // FUNÇÃO PARA MOSTRAR LOADING NO BOTÃO DE BUSCA
+        const btnBuscar = document.getElementById('btnBuscar');
+        
+        function setButtonLoading(isLoading) {
+            if (isLoading) {
+                btnBuscar._originalText = btnBuscar.innerHTML;
+                btnBuscar.disabled = true;
+                btnBuscar.innerHTML = '<span class="spinner"></span>';
+            } else {
+                btnBuscar.disabled = false;
+                btnBuscar.innerHTML = btnBuscar._originalText || 'Buscar';
+            }
         }
 
-        // CORREÇÃO CRÍTICA: Agora renderiza múltiplos cards dinamicamente na tela
         async function checarOfertasAtivas(cpf) {
             const container = document.getElementById('ofertasContainer');
-            container.innerHTML = ''; // Limpa para não duplicar na atualização em tempo real
+            container.innerHTML = '<div style="text-align: center; padding: 12px;"><span class="spinner" style="border-top-color: #ff9900;"></span> Carregando ofertas...</div>';
 
             const q = query(collection(db, "ofertas"), where("cpf_cliente", "in", [cpf, "todos"]));
 
             try {
                 const querySnapshot = await getDocs(q);
                 const hojeIso = new Date().toISOString().split('T')[0];
+                let temOfertas = false;
+                container.innerHTML = '';
 
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     
-                    // Valida o prazo de vencimento de cada oferta encontrada
                     if (data.validade >= hojeIso) {
+                        temOfertas = true;
                         const [ano, mes, dia] = data.validade.split('-');
                         const dataBr = `${dia}/${mes}/${ano}`;
                         const isGeral = data.cpf_cliente === "todos";
 
-                        // Cria a caixinha injetando as classes correspondentes
                         const cardElement = document.createElement('div');
                         cardElement.className = isGeral ? 'notificacao-oferta oferta-geral' : 'notificacao-oferta';
                         
-                        const tituloTag = isGeral ? `📢 Campanhas da Loja: ${data.titulo}` : `🎯 Exclusivo pra Você: ${data.titulo}`;
+                        const tituloTag = isGeral ? `📢 ${data.titulo}` : `🎯 ${data.titulo}`;
 
                         cardElement.innerHTML = `
                             <h4>${tituloTag}</h4>
-                            <p>${data.descricao || "Aproveite esta condição especial no caixa."}</p>
-                            <span class="val-tag">Válido até: ${dataBr}</span>
+                            <p>${data.descricao || "Aproveite esta oferta especial!"}</p>
+                            <span class="val-tag">📅 Válido até ${dataBr}</span>
                         `;
                         
-                        // Adiciona no contêiner empilhando uma embaixo da outra
                         container.appendChild(cardElement);
                     }
                 });
-            } catch (e) { console.error(e); }
+
+                if (!temOfertas) {
+                    container.innerHTML = '<p style="background: #f1f3f5; padding: 12px; border-radius: 16px; text-align: center; font-size: 0.8rem; color: #6c757d;">✨ Nenhuma oferta ativa no momento</p>';
+                }
+            } catch (e) { 
+                console.error(e);
+                container.innerHTML = '<p style="color: var(--gray-600); font-size: 0.75rem; text-align: center;">⚠️ Erro ao carregar ofertas</p>';
+            }
         }
 
         async function carregarExtrato(cpf) {
             const listContainer = document.getElementById('extratoList');
+            listContainer.innerHTML = '<div class="loading-placeholder"><span class="spinner" style="border-top-color: #00a884;"></span> Carregando histórico...</div>';
+            
             const q = query(collection(db, "historico_compras"), where("cpf_cliente", "==", cpf));
             try {
                 const querySnapshot = await getDocs(q);
                 listContainer.innerHTML = '';
+                
                 if (querySnapshot.empty) {
-                    listContainer.innerHTML = `<p style="color: #667781; font-size: 13px; text-align: center; width: 100%;">Nenhum histórico.</p>`;
+                    listContainer.innerHTML = `<p class="loading-placeholder">📭 Nenhuma movimentação ainda</p>`;
                     return;
                 }
+                
+                const items = [];
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     const itemDiv = document.createElement('div');
@@ -171,8 +440,8 @@
                         itemDiv.className = 'extrato-item tipo-resgate';
                         itemDiv.innerHTML = `
                             <div>
-                                <h5>Desconto / Resgate de Saldo</h5>
-                                <span>Utilizado como desconto no caixa</span>
+                                <h5>💸 Resgate de Saldo</h5>
+                                <span>Desconto utilizado</span>
                             </div>
                             <span class="extrato-val val-negativo">- R$ ${Math.abs(data.valor_cashback).toFixed(2).replace('.', ',')}</span>
                         `;
@@ -180,16 +449,56 @@
                         itemDiv.className = 'extrato-item';
                         itemDiv.innerHTML = `
                             <div>
-                                <h5>Compra de R$ ${data.valor_compra.toFixed(2).replace('.', ',')}</h5>
-                                <span>Crédito ganho (${data.porcentagem_aplicada}%)</span>
+                                <h5>🛍️ Compra de R$ ${data.valor_compra.toFixed(2).replace('.', ',')}</h5>
+                                <span>${data.porcentagem_aplicada}% de cashback</span>
                             </div>
                             <span class="extrato-val">+ R$ ${data.valor_cashback.toFixed(2).replace('.', ',')}</span>
                         `;
                     }
-                    listContainer.appendChild(itemDiv);
+                    items.push(itemDiv);
                 });
-            } catch (error) { console.error(error); }
+                items.reverse().forEach(item => listContainer.appendChild(item));
+            } catch (error) { 
+                console.error(error);
+                listContainer.innerHTML = `<p class="loading-placeholder">⚠️ Erro ao carregar histórico</p>`;
+            }
         }
+
+        // FUNÇÃO PRINCIPAL DE CONSULTA COM LOADING
+        btnBuscar.addEventListener('click', async () => {
+            const cpf = document.getElementById('searchCpf').value.trim();
+            
+            if (!cpf || cpf.length !== 11) {
+                alert("⚠️ Digite um CPF com 11 dígitos!");
+                return;
+            }
+
+            setButtonLoading(true);
+            
+            // Limpa ofertas anteriores
+            document.getElementById('ofertasContainer').innerHTML = '';
+            document.getElementById('extratoList').innerHTML = '<div class="loading-placeholder"><span class="spinner" style="border-top-color: #00a884;"></span> Buscando dados...</div>';
+
+            if (activeUserUnsubscribe) activeUserUnsubscribe();
+
+            activeUserUnsubscribe = onSnapshot(doc(db, "usuarios", cpf), async (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    document.getElementById('txtSaldo').innerText = `R$ ${(data.saldo_cashback || 0).toFixed(2).replace('.', ',')}`;
+                    document.getElementById('txtCliente').innerText = `Olá, ${data.nome || 'Cliente'} 👋`;
+                    
+                    await checarOfertasAtivas(cpf);
+                    await carregarExtrato(cpf);
+                } else {
+                    document.getElementById('txtSaldo').innerText = "R$ 0,00";
+                    document.getElementById('txtCliente').innerText = "❌ Cliente não encontrado";
+                    document.getElementById('extratoList').innerHTML = `<p class="loading-placeholder">CPF sem registro</p>`;
+                    document.getElementById('ofertasContainer').innerHTML = '<p style="background: #f1f3f5; padding: 12px; border-radius: 16px; text-align: center; font-size: 0.8rem; color: #6c757d;">✨ Nenhuma oferta disponível</p>';
+                }
+                
+                setButtonLoading(false);
+            });
+        });
     </script>
 </body>
 </html>
