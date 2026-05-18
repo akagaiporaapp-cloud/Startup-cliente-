@@ -9,7 +9,6 @@
         body { background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; }
         .container { background: white; width: 100%; max-width: 450px; padding: 25px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center; }
         
-        /* Box da Oferta (oculto por padrão) */
         .notificacao-oferta { display: none; background-color: #fff3cd; border: 1px solid #ffeeba; border-left: 5px solid #ff9900; padding: 15px; border-radius: 8px; text-align: left; margin-bottom: 20px; animation: pulse 2s infinite; }
         .notificacao-oferta h4 { color: #856404; font-size: 15px; font-weight: 700; margin-bottom: 4px; }
         .notificacao-oferta p { color: #664d03; font-size: 13px; line-height: 1.4; }
@@ -25,11 +24,13 @@
         .card-saldo p { color: white; font-size: 14px; margin-top: 10px; opacity: 0.85; }
 
         .extrato-title { text-align: left; font-size: 15px; color: #111b21; margin-bottom: 10px; font-weight: 600; }
-        .extrato-list { max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; }
+        .extrato-list { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; text-align: left; }
         .extrato-item { background: #f8f9fa; padding: 10px 14px; border-radius: 8px; border-left: 4px solid #00a884; display: flex; justify-content: space-between; align-items: center; }
+        .extrato-item.tipo-resgate { border-left-color: #e91e63; }
         .extrato-item div h5 { font-size: 14px; color: #111b21; }
         .extrato-item div span { font-size: 11px; color: #667781; }
         .extrato-val { color: #00a884; font-weight: 600; font-size: 14px; }
+        .extrato-val.val-negativo { color: #e91e63; }
 
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(255, 153, 0, 0.4); }
@@ -60,7 +61,7 @@
             <p id="txtCliente">Informe seu CPF acima</p>
         </div>
 
-        <div class="extrato-title">Histórico de Ganhos</div>
+        <div class="extrato-title">Histórico de Movimentações</div>
         <div class="extrato-list" id="extratoList">
             <p style="color: #667781; font-size: 13px; text-align: center; width: 100%; margin-top: 10px;">Nenhuma consulta realizada.</p>
         </div>
@@ -70,14 +71,13 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // CREDENCIAIS DA SUA CONTA ATUALIZADAS
         const firebaseConfig = {
             apiKey: "AIzaSyBFmMSu6usbjQua4KAP-V0FFTeq5WxYH5c",
             authDomain: "startup-b5c8e.firebaseapp.com",
             projectId: "startup-b5c8e",
             storageBucket: "startup-b5c8e.firebasestorage.app",
             messagingSenderId: "36503928162",
-            appId: "1:36503928162:web:22eafe938d86c6b2e99403b"
+            appId: "1:36503928162:web:2eafe938d86c6b2e99403b"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -123,7 +123,6 @@
 
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
-                    
                     if (data.validade >= hojeIso && !ofertaValidaEncontrada) {
                         ofertaValidaEncontrada = true;
                         const [ano, mes, dia] = data.validade.split('-');
@@ -152,14 +151,27 @@
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     const itemDiv = document.createElement('div');
-                    itemDiv.className = 'extrato-item';
-                    itemDiv.innerHTML = `
-                        <div>
-                            <h5>Compra de R$ ${data.valor_compra.toFixed(2).replace('.', ',')}</h5>
-                            <span>Crédito ganho (${data.porcentagem_aplicada}%)</span>
-                        </div>
-                        <span class="extrato-val">+ R$ ${data.valor_cashback.toFixed(2).replace('.', ',')}</span>
-                    `;
+                    
+                    // Se o tipo for resgate, aplica a classe rosa. Se for ganho, mantém o padrão verde.
+                    if (data.tipo === "resgate" || data.valor_cashback < 0) {
+                        itemDiv.className = 'extrato-item tipo-resgate';
+                        itemDiv.innerHTML = `
+                            <div>
+                                <h5>Desconto / Resgate de Saldo</h5>
+                                <span>Utilizado como desconto no caixa</span>
+                            </div>
+                            <span class="extrato-val val-negativo">- R$ ${Math.abs(data.valor_cashback).toFixed(2).replace('.', ',')}</span>
+                        `;
+                    } else {
+                        itemDiv.className = 'extrato-item';
+                        itemDiv.innerHTML = `
+                            <div>
+                                <h5>Compra de R$ ${data.valor_compra.toFixed(2).replace('.', ',')}</h5>
+                                <span>Crédito ganho (${data.porcentagem_aplicada}%)</span>
+                            </div>
+                            <span class="extrato-val">+ R$ ${data.valor_cashback.toFixed(2).replace('.', ',')}</span>
+                        `;
+                    }
                     listContainer.appendChild(itemDiv);
                 });
             } catch (error) { console.error(error); }
